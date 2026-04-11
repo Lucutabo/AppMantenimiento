@@ -1,0 +1,251 @@
+﻿<Window x:Class="AppMantenimiento.DashboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dashboard - Estado de Equipos" Height="700" Width="1100"
+        WindowStartupLocation="CenterOwner" Background="#F0F4F8">
+
+    <Window.Resources>
+        <Style x:Key="KpiCard" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="18,14"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+        <Style x:Key="KpiNum" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="36"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="KpiLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#FFFFFFCC"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+        <Style x:Key="BtnStyle" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ColHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#EEF2F7"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#D0D7E3"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- CABECERA -->
+        <Border Grid.Row="0" CornerRadius="10" Padding="18,12" Margin="0,0,0,16">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#1A1A2E" Offset="0"/>
+                    <GradientStop Color="#16213E" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Dashboard de Mantenimiento"
+                               FontSize="22" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock x:Name="TxtFechaHora"
+                               FontSize="12" Foreground="#8892B0" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="Actualizar"
+                        Style="{StaticResource BtnStyle}"
+                        Background="#0D6EFD"
+                        VerticalAlignment="Center"
+                        Click="BtnActualizar_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- KPIs -->
+        <Grid Grid.Row="1" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource KpiCard}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#0D6EFD" Offset="0"/>
+                        <GradientStop Color="#0B5ED7" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.15"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock x:Name="KpiTotal" Text="0" Style="{StaticResource KpiNum}"/>
+                    <TextBlock Text="Equipos activos" Style="{StaticResource KpiLabel}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource KpiCard}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#DC2626" Offset="0"/>
+                        <GradientStop Color="#B91C1C" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.15"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock x:Name="KpiVencidos" Text="0" Style="{StaticResource KpiNum}"/>
+                    <TextBlock Text="Mantenimiento vencido" Style="{StaticResource KpiLabel}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource KpiCard}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#D97706" Offset="0"/>
+                        <GradientStop Color="#B45309" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.15"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock x:Name="KpiProximos" Text="0" Style="{StaticResource KpiNum}"/>
+                    <TextBlock x:Name="LblKpiProximos" Text="Vencen pronto" Style="{StaticResource KpiLabel}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="3" Style="{StaticResource KpiCard}" Margin="0">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#059669" Offset="0"/>
+                        <GradientStop Color="#047857" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.15"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock x:Name="KpiAlDia" Text="0" Style="{StaticResource KpiNum}"/>
+                    <TextBlock Text="Al dia" Style="{StaticResource KpiLabel}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- FILTRO -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="Ver:" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#5A6375" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <RadioButton x:Name="RbTodos" Content="Todos"
+                         IsChecked="True" FontSize="12"
+                         Margin="0,0,12,0" VerticalAlignment="Center"
+                         Checked="FiltroChanged"/>
+            <RadioButton x:Name="RbVencidos" Content="Vencidos"
+                         FontSize="12" Margin="0,0,12,0" VerticalAlignment="Center"
+                         Checked="FiltroChanged"/>
+            <RadioButton x:Name="RbProximos" Content="Vencen pronto"
+                         FontSize="12" Margin="0,0,12,0" VerticalAlignment="Center"
+                         Checked="FiltroChanged"/>
+            <RadioButton x:Name="RbAlDia" Content="Al dia"
+                         FontSize="12" VerticalAlignment="Center"
+                         Checked="FiltroChanged"/>
+        </StackPanel>
+
+        <!-- TABLA -->
+        <Border Grid.Row="3" Background="White" CornerRadius="10" Padding="0">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.08"/>
+            </Border.Effect>
+            <DataGrid x:Name="GridDashboard"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserResizeRows="False"
+                      RowHeight="42"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      BorderThickness="0"
+                      AlternatingRowBackground="#F8FBFF"
+                      SelectionMode="Single"
+                      ColumnHeaderStyle="{StaticResource ColHeaderStyle}">
+                <DataGrid.Columns>
+
+                    <DataGridTextColumn Header="Equipo"            Binding="{Binding Nombre}"           Width="200"/>
+                    <DataGridTextColumn Header="Ubicación"         Binding="{Binding Ubicacion}"         Width="130"/>
+                    <DataGridTextColumn Header="Frecuencia"        Binding="{Binding FrecuenciaTexto}"   Width="110"/>
+                    <DataGridTextColumn Header="Última lectura"    Binding="{Binding UltimaLectura}"     Width="130"/>
+                    <DataGridTextColumn Header="Restante"          Binding="{Binding RestanteTexto}"     Width="100"/>
+                    <DataGridTextColumn Header="Operario asignado" Binding="{Binding OperarioAsignado}"  Width="160"/>
+
+                    <DataGridTemplateColumn Header="Estado" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border x:Name="EstadoBd" CornerRadius="10"
+                                        Padding="8,3" HorizontalAlignment="Center"
+                                        Background="#D1FAE5">
+                                    <TextBlock x:Name="TxtEstado"
+                                               Text="{Binding EstadoTexto}"
+                                               Foreground="#065F46"
+                                               FontSize="11" FontWeight="SemiBold"/>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding EstadoColor}" Value="Rojo">
+                                        <Setter TargetName="EstadoBd"
+                                                Property="Background" Value="#FEE2E2"/>
+                                        <Setter TargetName="TxtEstado"
+                                                Property="Foreground" Value="#991B1B"/>
+                                        
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding EstadoColor}" Value="Naranja">
+                                        <Setter TargetName="EstadoBd"
+                                                Property="Background" Value="#FEF3C7"/>
+                                        <Setter TargetName="TxtEstado"
+                                                Property="Foreground" Value="#92400E"/>
+                                        
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+    </Grid>
+</Window>
