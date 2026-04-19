@@ -42,7 +42,8 @@ namespace AppMantenimiento
             var resumen = new List<string>();
             int equiposCreados = 0;
             int lecturasInsertadas = 0;
-            int filasSaltadas = 0;
+            int filasDuplicadas = 0;
+            int filasInvalidas = 0;
 
             using var workbook = new XLWorkbook(rutaExcel);
 
@@ -51,6 +52,11 @@ namespace AppMantenimiento
                 string nombreHojaOriginal = LimpiarTexto(ws.Name);
                 if (string.IsNullOrWhiteSpace(nombreHojaOriginal))
                     continue;
+
+                int importadasHoja = 0;
+                int duplicadasHoja = 0;
+                int invalidasHoja = 0;
+                bool equipoCreadoEnHoja = false;
 
                 string nombreEquipoExcel = NormalizarNombreEquipo(nombreHojaOriginal);
                 string nombreEquipoFinal = ResolverNombreEquipo(nombreEquipoExcel);
@@ -83,6 +89,7 @@ namespace AppMantenimiento
                         .FirstOrDefault(e => string.Equals(LimpiarTexto(e.Nombre), nombreEquipoFinal, StringComparison.OrdinalIgnoreCase));
 
                     equiposCreados++;
+                    equipoCreadoEnHoja = true;
                 }
 
                 if (equipo == null)
@@ -116,11 +123,12 @@ namespace AppMantenimiento
 
                     if (string.IsNullOrWhiteSpace(descripcion))
                     {
-                        filasSaltadas++;
+                        filasInvalidas++;
+                        invalidasHoja++;
                         continue;
                     }
 
-                    string tipoRegistro = DeterminarTipoRegistro(descripcion);
+                    string tipoRegistro = DeterminarTipoRegistro(descripcion, horasActuales);
 
                     descripcion = descripcion.Trim();
                     if (!descripcion.EndsWith(MarcaImportacion, StringComparison.OrdinalIgnoreCase))
@@ -142,7 +150,8 @@ namespace AppMantenimiento
 
                     if (yaExiste)
                     {
-                        filasSaltadas++;
+                        filasDuplicadas++;
+                        duplicadasHoja++;
                         continue;
                     }
 
@@ -156,19 +165,25 @@ namespace AppMantenimiento
                         Proveedor = proveedor,
                         HorasActuales = horasActuales,
                         TipoRegistro = tipoRegistro,
-                        Tipo = horasActuales > 0 ? "Lectura" : "Mantenimiento",
+                        Tipo = tipoRegistro,
                         Valor = horasActuales > 0 ? horasActuales.ToString(CultureInfo.InvariantCulture) : "",
                         Coste = coste
                     };
 
-                    DatabaseHelper.AgregarLectura(lectura);
+                    DatabaseHelper.AgregarLectura(lectura, actualizarEquipo: false);
                     lecturasInsertadas++;
+                    importadasHoja++;
                 }
-            }
+            
+            resumen.Add($"Hoja: {nombreHojaOriginal} | Equipo: {nombreEquipoFinal} | Equipo nuevo: {(equipoCreadoEnHoja ? "Sí" : "No")} | Importadas: {importadasHoja} | Duplicadas: {duplicadasHoja} | Inválidas: {invalidasHoja}");
 
+            }
+            resumen.Insert(0, $"Archivo importado: {Path.GetFileName(rutaExcel)}");
+            resumen.Add("--------------------------------------------------");
             resumen.Add($"Equipos creados: {equiposCreados}");
             resumen.Add($"Lecturas importadas: {lecturasInsertadas}");
-            resumen.Add($"Filas saltadas: {filasSaltadas}");
+            resumen.Add($"Filas duplicadas: {filasDuplicadas}");
+            resumen.Add($"Filas inválidas: {filasInvalidas}");
 
             return string.Join(Environment.NewLine, resumen);
         }
@@ -316,12 +331,28 @@ namespace AppMantenimiento
             return 0;
         }
 
-        private static string DeterminarTipoRegistro(string descripcion)
+        private static string DeterminarTipoRegistro(string descripcion, int horasActuales)
         {
             string d = (descripcion ?? "").ToUpperInvariant();
 
-            if (d.Contains("COMPROBACION HORAS") || d.Contains("REVISION") || d.Contains("MANTENIMIENTO"))
+            string[] palabrasMantenimiento =
+            {
+                "REVISION", "REVISIÓN", "MANTENIMIENTO", "CAMBIO", "AVERIA", "AVERÍA",
+                "REPARACION", "REPARACIÓN", "SUSTITUCION", "SUSTITUCIÓN", "ENGRASE",
+                "ACEITE", "FILTRO", "BATERIA", "BATERÍA", "RUEDA", "NEUMATICO",
+                "NEUMÁTICO", "CORREA", "BOMBA", "LATIGUILLO", "FUGA", "TALLER",
+                "GRASA", "HIDRAULICO", "HIDRÁULICO", "PINCHAZO", "ITV", "FRENO",
+                "MOTOR", "ARRANQUE", "ALTERNADOR", "INYECCION", "INYECCIÓN"
+    };
+
+            if (palabrasMantenimiento.Any(p => d.Contains(p)))
                 return "Mantenimiento";
+
+            if (d.Contains("COMPROBACION HORAS") || d.Contains("COMPROBACIÓN HORAS"))
+                return "Lectura";
+
+            if (horasActuales > 0)
+                return "Lectura";
 
             return "Mantenimiento";
         }

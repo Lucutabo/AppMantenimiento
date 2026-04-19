@@ -95,6 +95,20 @@
             </Border.Effect>
 
             <StackPanel>
+                <Border x:Name="PanelModoEdicion"
+                    Background="#111111"
+                    BorderBrush="#FFD600"
+                    BorderThickness="2"
+                    CornerRadius="6"
+                    Padding="12,8"
+                    Margin="0,0,0,12">
+                    <TextBlock x:Name="TxtModoEdicion"
+                       Text="Modo alta de registro"
+                       Foreground="#FFD600"
+                       FontWeight="Bold"
+                       FontSize="13"/>
+                </Border>
+
                 <!-- Selector tipo -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
                     <TextBlock Text="Tipo de registro:" Style="{StaticResource LabelStyle}"
@@ -110,14 +124,18 @@
                 <!-- Fila 1: Equipo + Valor + Coste + Proveedor + Botón -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="210"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="160"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="150"/>
                     </Grid.ColumnDefinitions>
 
@@ -144,10 +162,31 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="8" VerticalAlignment="Bottom">
-                        <Button x:Name="BtnRegistrar" Content="✔  Registrar"
+                        <Button x:Name="BtnLimpiar" Content="🧹 Limpiar"
                         Style="{StaticResource BtnBase}"
-                        Background="#2E7D32" Padding="16,0"
-                        Height="34" Click="BtnRegistrar_Click"/>
+                        Background="#78909C"
+                        Padding="10,0"
+                        Height="34"
+                        Click="BtnLimpiar_Click"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="10" VerticalAlignment="Bottom">
+                        <Button x:Name="BtnBorrar" Content="🗑 Borrar"
+                        Style="{StaticResource BtnBase}"
+                        Background="#C62828"
+                        Padding="10,0"
+                        Height="34"
+                        Click="BtnBorrar_Click"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="12" VerticalAlignment="Bottom">
+                        <Button x:Name="BtnRegistrar" Content="✔ Registrar"
+                        Style="{StaticResource BtnBase}"
+                        Background="#2E7D32"
+                        Padding="12,0"
+                        MinWidth="140"
+                        Height="34"
+                        Click="BtnRegistrar_Click"/>    
                     </StackPanel>
                 </Grid>
 
@@ -253,13 +292,16 @@
                 <DataGrid Grid.Row="1" x:Name="GridLecturas"
                           AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" CanUserResizeRows="False"
+                          CanUserSortColumns="True"
+                          Sorting="GridLecturas_Sorting"
+                          SelectionChanged="GridLecturas_SelectionChanged"
                           GridLinesVisibility="Horizontal"
                           HorizontalGridLinesBrush="#F0F4F8"
                           BorderThickness="0" FontSize="13"
                           AlternatingRowBackground="#F8FAFB"
                           RowBackground="White"
                           SelectionMode="Single"
-                          ColumnHeaderHeight="38">
+                          ColumnHeaderHeight="38">      
 
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
@@ -284,7 +326,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTemplateColumn Header="TIPO" Width="145">
+                        <DataGridTemplateColumn Header="TIPO" Width="145" SortMemberPath="Tipo">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border CornerRadius="4" Padding="8,3"
@@ -316,7 +358,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTextColumn Header="EQUIPO" Binding="{Binding NombreEquipo}" Width="160">
+                        <DataGridTextColumn Header="EQUIPO" Binding="{Binding NombreEquipo}" Width="160" SortMemberPath="NombreEquipo">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>
@@ -326,7 +368,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="VALOR" Binding="{Binding Valor}" Width="80">
+                        <DataGridTextColumn Header="VALOR" Binding="{Binding Valor}" Width="80" SortMemberPath="Valor">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>
@@ -338,7 +380,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="DESCRIPCIÓN / ACTUACIÓN" Binding="{Binding Descripcion}" Width="*">
+                        <DataGridTextColumn Header="DESCRIPCIÓN / ACTUACIÓN" Binding="{Binding Descripcion}" Width="*" SortMemberPath="Descripcion">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>
@@ -348,7 +390,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="COSTE (€)" Binding="{Binding Coste, StringFormat=N2}" Width="90">
+                        <DataGridTextColumn Header="COSTE (€)" Binding="{Binding Coste, StringFormat=N2}" Width="90" SortMemberPath="Coste">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>
@@ -360,7 +402,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="130">
+                        <DataGridTextColumn Header="FECHA" Binding="{Binding Fecha}" Width="130" SortMemberPath="Fecha">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>
@@ -370,7 +412,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="PROVEEDOR" Binding="{Binding Proveedor}" Width="160">
+                        <DataGridTextColumn Header="PROVEEDOR" Binding="{Binding Proveedor}" Width="160" SortMemberPath="Proveedor">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>
@@ -380,7 +422,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="REGISTRADO POR" Binding="{Binding Operario}" Width="130">
+                        <DataGridTextColumn Header="REGISTRADO POR" Binding="{Binding Operario}" Width="130" SortMemberPath="Operario">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Padding" Value="8,0"/>

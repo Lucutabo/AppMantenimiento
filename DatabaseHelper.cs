@@ -486,12 +486,11 @@ namespace AppMantenimiento
         }
 
         // ── LECTURAS ─────────────────────────────────────────
-        public static void AgregarLectura(Lectura lectura)
+        public static void AgregarLectura(Lectura lectura, bool actualizarEquipo = true)
         {
             using var con = new SqliteConnection($"Data Source={rutaDb}");
             con.Open();
 
-            // 1. Insertar en historial
             var cmd = con.CreateCommand();
             cmd.CommandText = @"
             INSERT INTO Lecturas
@@ -509,7 +508,9 @@ namespace AppMantenimiento
             cmd.Parameters.AddWithValue("@co", lectura.Coste);
             cmd.ExecuteNonQuery();
 
-            // 2. Si es una lectura numérica, actualizar HorasActuales y UltimaLectura en Equipos
+            if (!actualizarEquipo)
+                return;
+
             if ((lectura.Tipo == "Lectura" || string.IsNullOrEmpty(lectura.Tipo)) &&
                 !string.IsNullOrWhiteSpace(lectura.Valor) &&
                 double.TryParse(lectura.Valor.Replace(",", "."),
@@ -519,14 +520,54 @@ namespace AppMantenimiento
             {
                 var cmd2 = con.CreateCommand();
                 cmd2.CommandText = @"UPDATE Equipos
-                             SET HorasActuales  = @h,
-                                 UltimaLectura  = @f
-                             WHERE Id = @id";
+                     SET HorasActuales  = @h,
+                         UltimaLectura  = @f
+                     WHERE Id = @id";
                 cmd2.Parameters.AddWithValue("@h", (int)valorNum);
                 cmd2.Parameters.AddWithValue("@f", lectura.Fecha ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
                 cmd2.Parameters.AddWithValue("@id", lectura.EquipoId);
                 cmd2.ExecuteNonQuery();
             }
+        }
+        public static void ActualizarLectura(Lectura lectura)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+
+            var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+            UPDATE Lecturas
+            SET EquipoId = @eq,
+                NombreEquipo = @ne,
+                Tipo = @ti,
+                Valor = @va,
+                Fecha = @fe,
+                Descripcion = @de,
+                Operario = @op,
+                Proveedor = @pr,
+                Coste = @co
+            WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@eq", lectura.EquipoId);
+            cmd.Parameters.AddWithValue("@ne", lectura.NombreEquipo ?? "");
+            cmd.Parameters.AddWithValue("@ti", lectura.Tipo ?? "Lectura");
+            cmd.Parameters.AddWithValue("@va", lectura.Valor ?? "");
+            cmd.Parameters.AddWithValue("@fe", lectura.Fecha ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+            cmd.Parameters.AddWithValue("@de", lectura.Descripcion ?? "");
+            cmd.Parameters.AddWithValue("@op", lectura.Operario ?? "Supervisor");
+            cmd.Parameters.AddWithValue("@pr", lectura.Proveedor ?? "");
+            cmd.Parameters.AddWithValue("@co", lectura.Coste);
+            cmd.Parameters.AddWithValue("@id", lectura.Id);
+            cmd.ExecuteNonQuery();
+        }
+        public static void BorrarLecturaPorId(int id)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+
+            var cmd = con.CreateCommand();
+            cmd.CommandText = "DELETE FROM Lecturas WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
         }
 
         public static List<Lectura> ObtenerLecturas()
@@ -551,7 +592,8 @@ namespace AppMantenimiento
                     Fecha = r.IsDBNull(5) ? "" : r.GetString(5),
                     Descripcion = r.IsDBNull(6) ? "" : r.GetString(6),
                     Operario = r.IsDBNull(7) ? "" : r.GetString(7),
-                    Coste = r.IsDBNull(8) ? 0 : r.GetDouble(8)
+                    Proveedor = r.IsDBNull(8) ? "" : r.GetString(8),
+                    Coste = r.IsDBNull(9) ? 0 : r.GetDouble(9)
                 });
             return lista;
         }

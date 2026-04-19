@@ -60,21 +60,6 @@ namespace AppMantenimiento
         {
             new DashboardWindow { Owner = this }.ShowDialog();
         }
-        private void BtnImportarHistoricoExcel_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string rutaExcel = @"C:\Users\Jesus.Puebla\Desktop\PALAS CARGADORAS CASTEJON.xlsx";
-                string resultadoImportacion = ImportadorHistoricosExcel.ImportarDesdeExcel(rutaExcel);
-
-                MessageBox.Show(resultadoImportacion, "Resultado importación",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al importar: " + ex.Message, "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        
     }
 }

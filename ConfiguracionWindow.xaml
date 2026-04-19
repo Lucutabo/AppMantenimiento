@@ -84,9 +84,11 @@
                 <RowDefinition Height="Auto"/>
                 <!-- 3: Umbrales -->
                 <RowDefinition Height="*"/>
-                <!-- 4: Espacio flexible -->
+                <!-- 4: Espacio Importar -->
                 <RowDefinition Height="Auto"/>
-                <!-- 5: Botones -->
+                <!-- 5: Espacio flexible -->
+                <RowDefinition Height="Auto"/>
+                <!-- 6: Botones -->
             </Grid.RowDefinitions>
 
             <!-- CABECERA -->
@@ -314,6 +316,36 @@
                                         Padding="16,0" Height="36" Margin="16,0,0,0"
                                         Click="BtnLimpiarBD_Click"/>
                                 </Grid>
+                            </Border>
+
+                            <!-- ── IMPORTAR DESDE EXCEL ── -->
+                            <Border Grid.Row="4" Background="White" CornerRadius="10"
+                                Padding="18,14" Margin="0,0,0,12">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.08"/>
+                                </Border.Effect>
+
+                                <StackPanel>
+                                    <TextBlock Text="Administración de datos"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   Foreground="#1E3A5F"
+                                   Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="Importación inicial o masiva de históricos desde Excel. Solo debe usarla el administrador."
+                                   Foreground="#5A6375"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                                    <Button x:Name="BtnImportarHistoricoExcel"
+                                    Content="Importar histórico Excel"
+                                    Style="{StaticResource BtnStyle}"
+                                    Background="#6C757D"
+                                    Width="220"
+                                    HorizontalAlignment="Left"
+                                    Click="BtnImportarHistoricoExcel_Click"/>
+                                </StackPanel>
                             </Border>
 
                         </StackPanel>

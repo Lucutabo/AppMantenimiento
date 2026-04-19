@@ -259,5 +259,36 @@ namespace AppMantenimiento
                 BtnTestScheduler.Content = "▶  Ejecutar ahora";
             }
         }
+        private void BtnImportarHistoricoExcel_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Seleccionar archivo Excel histórico",
+                    Filter = "Archivos Excel (*.xlsx)|*.xlsx",
+                    Multiselect = false
+                };
+
+                bool? resultado = dialog.ShowDialog();
+
+                if (resultado != true || string.IsNullOrWhiteSpace(dialog.FileName))
+                    return;
+
+                string rutaExcel = dialog.FileName;
+                string resultadoImportacion = ImportadorHistoricosExcel.ImportarDesdeExcel(rutaExcel);
+
+                MessageBox.Show(resultadoImportacion, "Resultado importación",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Error al importar el histórico desde Excel:\n\n" + ex.Message,
+                    "Error de importación",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
     }
 }

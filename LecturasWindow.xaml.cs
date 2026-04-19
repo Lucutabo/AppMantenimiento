@@ -5,12 +5,15 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.ComponentModel;
+using System.Windows.Data;
 
 namespace AppMantenimiento
 {
     public partial class LecturasWindow : Window
     {
         private List<Lectura> _todasLecturas = new();
+        private Lectura? _lecturaSeleccionada = null;
 
         public LecturasWindow()
         {
@@ -20,6 +23,7 @@ namespace AppMantenimiento
             PanelReset.Visibility = Visibility.Collapsed;
             LblValor.Text = "VALOR (h / km)";
             LblDescripcion.Text = "DESCRIPCIÓN (opcional)";
+            ActualizarEstadoFormulario();
 
             CargarEquipos();
             CargarLecturas();
@@ -64,7 +68,17 @@ namespace AppMantenimiento
                 _ => resultado
             };
 
-            var lista = resultado.ToList();
+            var lista = resultado
+                .OrderByDescending(l =>
+                {
+                    if (DateTime.TryParse(l.Fecha, out var fecha))
+                        return fecha;
+
+                    return DateTime.MinValue;
+                })
+                .ThenByDescending(l => l.Id)
+                .ToList();
+
             GridLecturas.ItemsSource = lista;
             TxtContador.Text = $"{lista.Count} registros";
             TxtCosteTotal.Text = $"{lista.Sum(l => l.Coste):N2} €";
@@ -72,6 +86,153 @@ namespace AppMantenimiento
 
         private void Filtro_Changed(object sender, SelectionChangedEventArgs e)
             => AplicarFiltros();
+
+        private void ActualizarEstadoFormulario()
+        {
+            bool enEdicion = _lecturaSeleccionada != null;
+            BtnBorrar.IsEnabled = enEdicion;
+
+            if (enEdicion)
+            {
+                PanelModoEdicion.Background = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#111111"));
+                PanelModoEdicion.BorderBrush = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFD600"));
+
+                TxtModoEdicion.Text = $"✏ MODO EDICIÓN · REGISTRO ID {_lecturaSeleccionada.Id}";
+                TxtModoEdicion.Foreground = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFD600"));
+
+                BtnRegistrar.Content = "💾  Guardar";
+            }
+            else
+            {
+                PanelModoEdicion.Background = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#263238"));
+                PanelModoEdicion.BorderBrush = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#90A4AE"));
+
+                TxtModoEdicion.Text = "Modo alta de registro";
+                TxtModoEdicion.Foreground = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFFFFF"));
+
+                BtnRegistrar.Content = "✔  Registrar";
+            }
+        }
+
+        private void BtnBorrar_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lecturaSeleccionada == null)
+            {
+                MessageBox.Show("Selecciona un registro para borrar.", "Aviso",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var res = MessageBox.Show(
+                $"¿Seguro que quieres borrar el registro ID {_lecturaSeleccionada.Id} del equipo '{_lecturaSeleccionada.NombreEquipo}'?\n\nEsta acción no se puede deshacer.",
+                "Confirmar borrado",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (res != MessageBoxResult.Yes)
+                return;
+
+            DatabaseHelper.BorrarLecturaPorId(_lecturaSeleccionada.Id);
+
+            _lecturaSeleccionada = null;
+            GridLecturas.SelectedItem = null;
+            TxtValor.Clear();
+            TxtDescripcion.Clear();
+            TxtProveedor.Clear();
+            TxtCoste.Text = "0";
+
+            if (ChkResetContador != null)
+                ChkResetContador.IsChecked = false;
+
+            ActualizarEstadoFormulario();
+            CargarLecturas();
+
+            MessageBox.Show("Registro borrado correctamente.", "Borrado",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnLimpiar_Click(object sender, RoutedEventArgs e)
+        {
+            _lecturaSeleccionada = null;
+            GridLecturas.SelectedItem = null;
+
+            if (CmbEquipo.Items.Count > 0)
+                CmbEquipo.SelectedIndex = 0;
+
+            RbLectura.IsChecked = true;
+            TxtValor.Clear();
+            TxtDescripcion.Clear();
+            TxtProveedor.Clear();
+            TxtCoste.Text = "0";
+
+            if (ChkResetContador != null)
+                ChkResetContador.IsChecked = false;
+
+            ActualizarEstadoFormulario();
+            TxtValor.Focus();
+        }
+
+        private void GridLecturas_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (GridLecturas.SelectedItem is not Lectura lectura)
+                return;
+            _lecturaSeleccionada = lectura;
+            ActualizarEstadoFormulario();
+
+            if (lectura.Tipo == "Mantenimiento")
+                RbMantenimiento.IsChecked = true;
+            else
+                RbLectura.IsChecked = true;
+
+            var equipos = CmbEquipo.ItemsSource as IEnumerable<Equipo>;
+            if (equipos != null)
+            {
+                var equipo = equipos.FirstOrDefault(x => x.Id == lectura.EquipoId);
+                if (equipo != null)
+                    CmbEquipo.SelectedItem = equipo;
+            }
+
+            TxtValor.Text = lectura.Valor ?? "";
+            TxtDescripcion.Text = lectura.Descripcion ?? "";
+            TxtProveedor.Text = lectura.Proveedor ?? "";
+            TxtCoste.Text = lectura.Coste != 0
+                ? lectura.Coste.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                : "0";
+        }
+        private void GridLecturas_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+
+            var view = CollectionViewSource.GetDefaultView(GridLecturas.ItemsSource);
+            if (view == null)
+                return;
+
+            string sortBy = e.Column.SortMemberPath;
+            if (string.IsNullOrWhiteSpace(sortBy))
+                return;
+
+            ListSortDirection direction = ListSortDirection.Ascending;
+
+            if (e.Column.SortDirection != ListSortDirection.Ascending)
+                direction = ListSortDirection.Ascending;
+            else
+                direction = ListSortDirection.Descending;
+
+            foreach (var column in GridLecturas.Columns)
+                column.SortDirection = null;
+
+            e.Column.SortDirection = direction;
+
+            view.SortDescriptions.Clear();
+            view.SortDescriptions.Add(new SortDescription(sortBy, direction));
+            view.Refresh();
+        }
 
         // ── Cambio de tipo (Lectura / Mantenimiento) ───────────────────────
         private void TipoRegistro_Changed(object sender, RoutedEventArgs e)
@@ -122,32 +283,54 @@ namespace AppMantenimiento
                 valorStr = horasAct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
             }
 
+            double coste = 0;
+            if (!string.IsNullOrWhiteSpace(TxtCoste.Text) && TxtCoste.Text != "0")
+            {
+                double.TryParse(TxtCoste.Text.Replace(",", "."),
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out coste);
+            }
+
             var lectura = new Lectura
             {
+                Id = _lecturaSeleccionada?.Id ?? 0,
                 EquipoId = equipo.Id,
                 NombreEquipo = equipo.Nombre,
                 Tipo = esMantenimiento ? "Mantenimiento" : "Lectura",
                 Valor = valorStr,
                 Descripcion = TxtDescripcion.Text.Trim(),
-                Operario = "Supervisor",
+                Operario = _lecturaSeleccionada?.Operario ?? "Supervisor",
                 Proveedor = TxtProveedor.Text.Trim(),
-                Fecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+                Fecha = _lecturaSeleccionada?.Fecha ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                Coste = coste
             };
 
-            DatabaseHelper.AgregarLectura(lectura);
+            bool esEdicion = _lecturaSeleccionada != null;
 
-            // Sincronizar HorasActuales en Equipos para que el Dashboard lo recoja
+            if (!esEdicion)
+                DatabaseHelper.AgregarLectura(lectura);
+            else
+                DatabaseHelper.ActualizarLectura(lectura);
+
             if (!esMantenimiento && horasAct > 0)
                 DatabaseHelper.ActualizarHorasEquipo(equipo.Id, horasAct);
 
+            _lecturaSeleccionada = null;
+            ActualizarEstadoFormulario();
+            GridLecturas.SelectedItem = null;
             TxtValor.Clear();
             TxtDescripcion.Clear();
             TxtProveedor.Clear();
             TxtCoste.Text = "0";
             CargarLecturas();
 
-            MessageBox.Show($"Registro guardado para {equipo.Nombre}.", "Guardado",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                esEdicion
+                    ? $"Registro actualizado para {equipo.Nombre}."
+                    : $"Registro guardado para {equipo.Nombre}.",
+                "Guardado",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         // ── Reset contador ─────────────────────────────────────────────────
@@ -198,7 +381,7 @@ namespace AppMantenimiento
                 Descripcion = "RESET CONTADOR - " + desc,
                 Operario = "Supervisor",
                 Proveedor = TxtProveedor.Text.Trim(),
-                Fecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                Fecha = DateTime.Now.ToString("yyyy-MM-dd"),
                 Coste = coste
             });
 
@@ -214,12 +397,13 @@ namespace AppMantenimiento
             // Mantener la lectura real del equipo, NO ponerla a cero
             DatabaseHelper.ActualizarHorasEquipo(equipo.Id, (int)Math.Round(valorActual));
 
-            TxtDescripcion.Clear();
-            TxtValor.Clear();
-            TxtProveedor.Clear();
-            TxtCoste.Text = "0";
-            ChkResetContador.IsChecked = false;
-            CargarLecturas();
+            _lecturaSeleccionada = null;
+GridLecturas.SelectedItem = null;
+TxtValor.Clear();
+TxtDescripcion.Clear();
+TxtProveedor.Clear();
+TxtCoste.Text = "0";
+CargarLecturas();
 
             MessageBox.Show($"Contador reseteado para '{equipo.Nombre}'.\nPróximo ciclo parte desde {valorActual:F0} h.",
                 "Reset completado", MessageBoxButton.OK, MessageBoxImage.Information);
