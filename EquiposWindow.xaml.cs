@@ -6,6 +6,7 @@ namespace AppMantenimiento
 {
     public partial class EquiposWindow : Window
     {
+        private Equipo _equipoEnEdicion = null;
         public EquiposWindow()
         {
             InitializeComponent();
@@ -16,7 +17,7 @@ namespace AppMantenimiento
         }
 
         private void CargarEquipos()
-        {
+                    {
             try
             {
                 if (GridEquipos == null) return;
@@ -30,6 +31,42 @@ namespace AppMantenimiento
             {
                 System.Diagnostics.Debug.WriteLine($"Error cargando equipos: {ex.Message}");
             }
+        }
+
+        private void CargarEquipoEnFormulario(Equipo eq)
+        {
+            if (eq == null) return;
+
+            _equipoEnEdicion = eq;
+
+            TxtNombre.Text = eq.Nombre ?? "";
+            TxtUbicacion.Text = eq.Ubicacion ?? "";
+            TxtDescripcion.Text = eq.Descripcion ?? "";
+            TxtFrecHoras.Text = eq.FrecuenciaHoras > 0 ? eq.FrecuenciaHoras.ToString() : "";
+            TxtFrecKm.Text = eq.FrecuenciaKm > 0 ? eq.FrecuenciaKm.ToString() : "";
+
+            TxtSeleccionado.Text = $"Equipo seleccionado: {eq.Nombre} (ID {eq.Id})";
+        }
+
+        private void LimpiarFormulario()
+        {
+            _equipoEnEdicion = null;
+
+            TxtNombre.Clear();
+            TxtDescripcion.Clear();
+            TxtUbicacion.Clear();
+            TxtFrecHoras.Clear();
+            TxtFrecKm.Clear();
+
+            TxtSeleccionado.Text = "Selecciona un equipo de la tabla";
+        }
+
+        private void GridEquipos_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var eq = GridEquipos.SelectedItem as Equipo;
+            if (eq == null) return;
+
+            CargarEquipoEnFormulario(eq);
         }
 
         private void FiltroChanged(object sender, RoutedEventArgs e)
@@ -60,12 +97,46 @@ namespace AppMantenimiento
                 Activo = 1
             };
             DatabaseHelper.AgregarEquipo(equipo);
-            TxtNombre.Clear(); TxtDescripcion.Clear();
-            TxtUbicacion.Clear(); TxtFrecHoras.Clear(); TxtFrecKm.Clear();
+            LimpiarFormulario();
             CargarEquipos();
         }
 
-                private Equipo EquipoSeleccionado()
+        private void BtnModificar_Click(object sender, RoutedEventArgs e)
+        {
+            if (_equipoEnEdicion == null)
+            {
+                MessageBox.Show("Selecciona primero un equipo de la tabla.", "Aviso",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(TxtNombre.Text))
+            {
+                MessageBox.Show("El nombre del equipo es obligatorio.", "Aviso",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            int.TryParse(TxtFrecHoras.Text, out int horas);
+            int.TryParse(TxtFrecKm.Text, out int km);
+
+            _equipoEnEdicion.Nombre = TxtNombre.Text.Trim();
+            _equipoEnEdicion.Descripcion = TxtDescripcion.Text.Trim();
+            _equipoEnEdicion.Ubicacion = TxtUbicacion.Text.Trim();
+            _equipoEnEdicion.FrecuenciaHoras = horas;
+            _equipoEnEdicion.FrecuenciaKm = km;
+            _equipoEnEdicion.FrecuenciaMantenimiento = horas;
+
+            DatabaseHelper.ActualizarEquipo(_equipoEnEdicion);
+
+            MessageBox.Show("Equipo actualizado correctamente.", "OK",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+
+            CargarEquipos();
+            LimpiarFormulario();
+        }
+
+        private Equipo EquipoSeleccionado()
         {
             var eq = GridEquipos.SelectedItem as Equipo;
             if (eq == null)

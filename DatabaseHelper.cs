@@ -66,6 +66,9 @@ namespace AppMantenimiento
         public string Valor { get; set; }  // Número de horas/km (solo en Lectura)
         public string Descripcion { get; set; }
         public string Operario { get; set; }// "Registrado por"
+
+        public string Proveedor { get; set; }
+
         public string Fecha { get; set; }
         public double Coste { get; set; }
         public int HorasActuales { get; set; }      
@@ -195,6 +198,7 @@ namespace AppMantenimiento
             Migrar(con, "ALTER TABLE Equipos ADD COLUMN FrecuenciaKm INTEGER DEFAULT 0");
             Migrar(con, "ALTER TABLE Lecturas ADD COLUMN HorasActuales INTEGER DEFAULT 0");
             Migrar(con, "ALTER TABLE Lecturas ADD COLUMN TipoRegistro TEXT DEFAULT 'Mantenimiento'");
+            Migrar(con, "ALTER TABLE Lecturas ADD COLUMN Proveedor TEXT");
         }
 
         private static void Migrar(SqliteConnection con, string sql)
@@ -253,6 +257,33 @@ namespace AppMantenimiento
             cmd.Parameters.AddWithValue("@fh", e.FrecuenciaHoras);
             cmd.Parameters.AddWithValue("@fk", e.FrecuenciaKm);
             cmd.Parameters.AddWithValue("@fa", DateTime.Now.ToString("yyyy-MM-dd"));
+            cmd.ExecuteNonQuery();
+        }
+
+        public static void ActualizarEquipo(Equipo e)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+
+            var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+        UPDATE Equipos
+        SET Nombre = @n,
+            Descripcion = @d,
+            Ubicacion = @u,
+            FrecuenciaMantenimiento = @f,
+            FrecuenciaHoras = @fh,
+            FrecuenciaKm = @fk
+        WHERE Id = @id";
+
+            cmd.Parameters.AddWithValue("@id", e.Id);
+            cmd.Parameters.AddWithValue("@n", e.Nombre ?? "");
+            cmd.Parameters.AddWithValue("@d", e.Descripcion ?? "");
+            cmd.Parameters.AddWithValue("@u", e.Ubicacion ?? "");
+            cmd.Parameters.AddWithValue("@f", e.FrecuenciaMantenimiento);
+            cmd.Parameters.AddWithValue("@fh", e.FrecuenciaHoras);
+            cmd.Parameters.AddWithValue("@fk", e.FrecuenciaKm);
+
             cmd.ExecuteNonQuery();
         }
 
@@ -462,9 +493,11 @@ namespace AppMantenimiento
 
             // 1. Insertar en historial
             var cmd = con.CreateCommand();
-            cmd.CommandText = @"INSERT INTO Lecturas
-        (EquipoId, NombreEquipo, Tipo, Valor, Fecha, Descripcion, Operario, Coste)
-        VALUES (@eq, @ne, @ti, @va, @fe, @de, @op, @co)";
+            cmd.CommandText = @"
+            INSERT INTO Lecturas
+            (EquipoId, NombreEquipo, Tipo, Valor, Fecha, Descripcion, Operario, Proveedor, Coste)
+            VALUES
+            (@eq, @ne, @ti, @va, @fe, @de, @op, @pr, @co)";
             cmd.Parameters.AddWithValue("@eq", lectura.EquipoId);
             cmd.Parameters.AddWithValue("@ne", lectura.NombreEquipo ?? "");
             cmd.Parameters.AddWithValue("@ti", lectura.Tipo ?? "Lectura");
@@ -472,6 +505,7 @@ namespace AppMantenimiento
             cmd.Parameters.AddWithValue("@fe", lectura.Fecha ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
             cmd.Parameters.AddWithValue("@de", lectura.Descripcion ?? "");
             cmd.Parameters.AddWithValue("@op", lectura.Operario ?? "Supervisor");
+            cmd.Parameters.AddWithValue("@pr", lectura.Proveedor ?? "");
             cmd.Parameters.AddWithValue("@co", lectura.Coste);
             cmd.ExecuteNonQuery();
 
@@ -501,9 +535,10 @@ namespace AppMantenimiento
             using var con = new SqliteConnection($"Data Source={rutaDb}");
             con.Open();
             var cmd = con.CreateCommand();
-            cmd.CommandText = @"SELECT Id, EquipoId, NombreEquipo, Tipo, Valor,
-                               Fecha, Descripcion, Operario, COALESCE(Coste,0)
-                        FROM Lecturas ORDER BY Id DESC";
+            cmd.CommandText = @"
+                SELECT Id, EquipoId, NombreEquipo, Tipo, Valor, Fecha, Descripcion, Operario, COALESCE(Proveedor,''), COALESCE(Coste,0)
+                FROM Lecturas
+                ORDER BY Id DESC";
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 lista.Add(new Lectura
@@ -760,7 +795,9 @@ namespace AppMantenimiento
                     NombreEquipo = r.IsDBNull(2) ? "" : r.GetString(2),
                     Fecha = r.IsDBNull(3) ? "" : r.GetString(3),
                     Descripcion = r.IsDBNull(4) ? "" : r.GetString(4),
-                    Operario = r.IsDBNull(5) ? "" : r.GetString(5)
+                    Operario = r.IsDBNull(7) ? "" : r.GetString(7),
+                    Proveedor = r.IsDBNull(8) ? "" : r.GetString(8),
+                    Coste = r.IsDBNull(9) ? 0 : r.GetDouble(9)
                 });
             return lista;
         }

@@ -92,7 +92,12 @@
                 <Button Content="Dashboard - Estado equipos" Width="260" Height="36"
                         Margin="0,0,0,10" Background="#1A1A2E" Foreground="White"
                         BorderThickness="0" FontWeight="SemiBold"
-                        Click="BtnDashboardClick"/>     
+                        Click="BtnDashboardClick"/>
+                
+                <Button Content="Importar histórico Excel"
+                        Click="BtnImportarHistoricoExcel_Click"
+                        Margin="5"
+                        Padding="10,5"/>        
 
                 <Button Style="{StaticResource MenuButton}" Click="BtnEquipos_Click">
                     <Button.Background>

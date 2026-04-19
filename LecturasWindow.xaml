@@ -107,14 +107,16 @@
                          Checked="TipoRegistro_Changed"/>
                 </StackPanel>
 
-                <!-- Fila 1: Equipo + Valor + Coste + Botón -->
+                <!-- Fila 1: Equipo + Valor + Coste + Proveedor + Botón -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="210"/>
                         <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="140"/>
-                        <ColumnDefinition Width="12"/>
                         <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="220"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="150"/>
                     </Grid.ColumnDefinitions>
@@ -122,13 +124,12 @@
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="EQUIPO" Style="{StaticResource LabelStyle}"/>
                         <ComboBox x:Name="CmbEquipo" Style="{StaticResource InputStyle}"
-                          DisplayMemberPath="Nombre" SelectedValuePath="Id"/>
+                        DisplayMemberPath="Nombre" SelectedValuePath="Id"/>
                     </StackPanel>
 
-                    <!-- Valor: visible siempre, pero etiqueta cambia según modo -->
                     <StackPanel Grid.Column="2">
                         <TextBlock x:Name="LblValor" Text="VALOR (h / km)"
-                           Style="{StaticResource LabelStyle}"/>
+                        Style="{StaticResource LabelStyle}"/>
                         <TextBox x:Name="TxtValor" Style="{StaticResource InputStyle}"/>
                     </StackPanel>
 
@@ -137,7 +138,12 @@
                         <TextBox x:Name="TxtCoste" Style="{StaticResource InputStyle}" Text="0"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="6" VerticalAlignment="Bottom">
+                    <StackPanel Grid.Column="6">
+                        <TextBlock Text="PROVEEDOR (opcional)" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="TxtProveedor" Style="{StaticResource InputStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="8" VerticalAlignment="Bottom">
                         <Button x:Name="BtnRegistrar" Content="✔  Registrar"
                         Style="{StaticResource BtnBase}"
                         Background="#2E7D32" Padding="16,0"
@@ -360,6 +366,16 @@
                                     <Setter Property="Padding" Value="8,0"/>
                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                     <Setter Property="Foreground" Value="#546E7A"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="PROVEEDOR" Binding="{Binding Proveedor}" Width="160">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Padding" Value="8,0"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Foreground" Value="#455A64"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>

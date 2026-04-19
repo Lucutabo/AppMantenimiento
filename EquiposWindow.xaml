@@ -111,18 +111,29 @@
                              ToolTip="Frecuencia de mantenimiento por kilómetros"/>
                 </StackPanel>
 
-                <Button Grid.Column="5" x:Name="BtnAgregar"
-                        Style="{StaticResource BtnAccion}"
-                        Content="➕ Agregar equipo"
-                        VerticalAlignment="Bottom" Margin="0,0,0,0"
-                        Click="BtnAgregar_Click">
-                    <Button.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#1A8754" Offset="0"/>
-                            <GradientStop Color="#20C997" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Button.Background>
-                </Button>
+                <StackPanel Grid.Column="5" Orientation="Vertical" VerticalAlignment="Bottom">
+                    <Button x:Name="BtnAgregar"
+            Style="{StaticResource BtnAccion}"
+            Content="➕ Agregar equipo"
+            Margin="0,0,0,8"
+            Click="BtnAgregar_Click">
+                        <Button.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#1A8754" Offset="0"/>
+                                <GradientStop Color="#20C997" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Button.Background>
+                    </Button>
+
+                    <Button x:Name="BtnModificar"
+            Style="{StaticResource BtnAccion}"
+            Content="✏️ Modificar equipo"
+            Click="BtnModificar_Click">
+                        <Button.Background>
+                            <SolidColorBrush Color="#2563EB"/>
+                        </Button.Background>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -151,6 +162,7 @@
                 </StackPanel>
 
                 <DataGrid Grid.Row="1" x:Name="GridEquipos"
+                    SelectionChanged="GridEquipos_SelectionChanged"
                           AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" CanUserResizeRows="False"
                           RowHeight="38" HeadersVisibility="Column"

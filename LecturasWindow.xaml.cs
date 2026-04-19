@@ -130,6 +130,7 @@ namespace AppMantenimiento
                 Valor = valorStr,
                 Descripcion = TxtDescripcion.Text.Trim(),
                 Operario = "Supervisor",
+                Proveedor = TxtProveedor.Text.Trim(),
                 Fecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             };
 
@@ -141,6 +142,8 @@ namespace AppMantenimiento
 
             TxtValor.Clear();
             TxtDescripcion.Clear();
+            TxtProveedor.Clear();
+            TxtCoste.Text = "0";
             CargarLecturas();
 
             MessageBox.Show($"Registro guardado para {equipo.Nombre}.", "Guardado",
@@ -190,10 +193,11 @@ namespace AppMantenimiento
                 NombreEquipo = equipo.Nombre,
                 Tipo = "Mantenimiento",
                 Valor = valorActual > 0
-                              ? valorActual.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)
-                              : "",
+                  ? valorActual.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)
+                  : "",
                 Descripcion = "RESET CONTADOR - " + desc,
                 Operario = "Supervisor",
+                Proveedor = TxtProveedor.Text.Trim(),
                 Fecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                 Coste = coste
             });
@@ -212,6 +216,7 @@ namespace AppMantenimiento
 
             TxtDescripcion.Clear();
             TxtValor.Clear();
+            TxtProveedor.Clear();
             TxtCoste.Text = "0";
             ChkResetContador.IsChecked = false;
             CargarLecturas();
@@ -244,13 +249,16 @@ namespace AppMantenimiento
             {
                 using var sw = new StreamWriter(dlg.FileName, false,
                     new System.Text.UTF8Encoding(true)); // BOM para Excel
-                sw.WriteLine("ID;Equipo;Tipo;Valor;Descripcion;Coste (EUR);Fecha;Registrado por");
+                sw.WriteLine("ID;Equipo;Tipo;Valor;Descripcion;Proveedor;Coste (EUR);Fecha;Registrado por");
                 foreach (var r in registros)
                 {
                     var desc = r.Descripcion?.Replace("\"", "\"\"") ?? "";
+                    var proveedor = (r.Proveedor ?? "").Replace("\"", "\"\"");
+
                     sw.WriteLine(
                         $"{r.Id};{r.NombreEquipo};{r.Tipo};{r.Valor};" +
                         $"\"{desc}\";" +
+                        $"\"{proveedor}\";" +
                         $"{r.Coste.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)};" +
                         $"{r.Fecha};{r.Operario}");
                 }
