@@ -11,16 +11,17 @@ namespace AppMantenimiento
 
         public void Iniciar()
         {
-            int.TryParse(DatabaseHelper.LeerConfiguracion("SchedulerIntervaloHoras"), out int dias);
-            if (dias <= 0) dias = 1;
+            int.TryParse(DatabaseHelper.LeerConfiguracion("SchedulerIntervaloHoras"), out int horas);
+            if (horas <= 0) horas = 24;
 
             var activo = DatabaseHelper.LeerConfiguracion("SchedulerActivo") ?? "1";
             if (activo == "0") return;
 
-            // Scheduler desactivado
-
-            timer = new System.Threading.Timer(VerificarMantenimientos, null,
-            TimeSpan.Zero, TimeSpan.FromDays(dias));
+            timer = new System.Threading.Timer(
+                VerificarMantenimientos,
+                null,
+                TimeSpan.FromHours(horas),
+                TimeSpan.FromHours(horas));
         }
 
         public void Detener()
@@ -149,6 +150,12 @@ namespace AppMantenimiento
         // ── Solicitar lecturas de horas cada 15 días ──────────
         private void SolicitarLecturasPendientes()
         {
+            if (DateTime.Now.DayOfWeek == DayOfWeek.Saturday ||
+                DateTime.Now.DayOfWeek == DayOfWeek.Sunday)
+            {
+                return;
+            }
+
             var telegramSvc = new TelegramService();
             var equipos = DatabaseHelper.GetEquipos();
             var asignaciones = DatabaseHelper.ObtenerAsignaciones();
@@ -161,31 +168,50 @@ namespace AppMantenimiento
             {
                 if (equipo.Activo != 1 || equipo.FrecuenciaHoras <= 0) continue;
 
-                // Calcular días desde la ÚLTIMA LECTURA REAL registrada
-                DateTime ultimaFecha;
+                DateTime ultimaFechaLectura;
                 if (!string.IsNullOrEmpty(equipo.UltimaLectura) &&
                     DateTime.TryParse(equipo.UltimaLectura, out var ul))
-                    ultimaFecha = ul;
+                    ultimaFechaLectura = ul;
                 else if (!string.IsNullOrEmpty(equipo.FechaAlta) &&
                          DateTime.TryParse(equipo.FechaAlta, out var fa))
-                    ultimaFecha = fa;
+                    ultimaFechaLectura = fa;
                 else
                     continue;
 
-                int diasSinLectura = (DateTime.Now - ultimaFecha).Days;
-
-                // Solo avisar si supera el umbral configurado
-                // Si ya superó el umbral → avisar cada día (reintento diario)
+                int diasSinLectura = (DateTime.Now.Date - ultimaFechaLectura.Date).Days;
                 if (diasSinLectura < diasUmbral) continue;
 
-                // Buscar operarios asignados con Chat ID
+                DateTime ultimaSolicitud = DateTime.MinValue;
+
+                bool haySolicitudPrevia =
+                    !string.IsNullOrWhiteSpace(equipo.UltimaSolicitudLectura) &&
+                    DateTime.TryParse(equipo.UltimaSolicitudLectura, out ultimaSolicitud);
+
+                bool enviar = false;
+                bool esPrimerAviso = false;
+
+                if (!haySolicitudPrevia)
+                {
+                    enviar = true;
+                    esPrimerAviso = true;
+                }
+                else
+                {
+                    int diasLaborables = ContarDiasLaborables(ultimaSolicitud.Date, DateTime.Now.Date);
+                    if (diasLaborables >= 3)
+                        enviar = true;
+                }
+
+                if (!enviar) continue;
+
                 var asigs = asignaciones.FindAll(a => a.EquipoId == equipo.Id);
+
                 foreach (var asig in asigs)
                 {
                     var op = operarios.Find(o => o.Id == asig.OperarioId && o.Activo == 1);
                     if (op == null || string.IsNullOrWhiteSpace(op.TelegramChatId)) continue;
 
-                    string mensajeTipo = diasSinLectura == diasUmbral
+                    string mensajeTipo = esPrimerAviso
                         ? "📋 *Solicitud de lectura de horas*"
                         : $"🔔 *Recordatorio ({diasSinLectura} días sin lectura)*";
 
@@ -197,13 +223,40 @@ namespace AppMantenimiento
                         $"`lectura {equipo.Id} horasactuales`\n" +
                         $"Ejemplo: `lectura {equipo.Id} {equipo.HorasActuales + 80}`");
                 }
+
+                DatabaseHelper.ActualizarUltimaSolicitudLectura(
+                    equipo.Id,
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
             }
         }
-        
+        private int ContarDiasLaborables(DateTime desde, DateTime hasta)
+        {
+            int dias = 0;
+            var fecha = desde.AddDays(1);
+
+            while (fecha <= hasta)
+            {
+                if (fecha.DayOfWeek != DayOfWeek.Saturday &&
+                    fecha.DayOfWeek != DayOfWeek.Sunday)
+                {
+                    dias++;
+                }
+
+                fecha = fecha.AddDays(1);
+            }
+
+            return dias;
+        }
+
 
         // ── Reintentar validaciones sin respuesta (>24h) ──────
         private void ReintentarValidacionesSinRespuesta()
         {
+            if (DateTime.Now.DayOfWeek == DayOfWeek.Saturday ||
+            DateTime.Now.DayOfWeek == DayOfWeek.Sunday)
+            {
+                return;
+            }
             var pendientes = DatabaseHelper.GetValidacionesPendientes();
             var telegramSvc = new TelegramService();
             var equipos = DatabaseHelper.GetEquipos();

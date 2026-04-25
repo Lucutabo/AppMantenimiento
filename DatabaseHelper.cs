@@ -25,6 +25,7 @@ namespace AppMantenimiento
         public int HorasActuales { get; set; }
         public int HorasUltimoMantenimiento { get; set; }
         public string FechaUltimoMantenimiento { get; set; }
+        public string UltimaSolicitudLectura { get; set; }
 
         public static string RutaDb => RutaDb;
 
@@ -183,6 +184,7 @@ namespace AppMantenimiento
             try { var m = con.CreateCommand(); m.CommandText = "ALTER TABLE Equipos ADD COLUMN FechaUltimoMantenimiento TEXT DEFAULT ''"; m.ExecuteNonQuery(); } catch { }
             try { var m = con.CreateCommand(); m.CommandText = "ALTER TABLE Lecturas ADD COLUMN Coste REAL DEFAULT 0"; m.ExecuteNonQuery(); } catch { }
             try { var m = con.CreateCommand(); m.CommandText = "ALTER TABLE Operarios ADD COLUMN TelegramChatId TEXT DEFAULT ''"; m.ExecuteNonQuery(); } catch { }
+            try { var m = con.CreateCommand(); m.CommandText = "ALTER TABLE Equipos ADD COLUMN UltimaSolicitudLectura TEXT DEFAULT ''"; m.ExecuteNonQuery(); } catch { }
             EnsureConfigKey("UmbralAviso", "50");
             EnsureConfigKey("UmbralCritico", "10");
 
@@ -297,7 +299,8 @@ namespace AppMantenimiento
             cmd.CommandText = @"SELECT Id,Nombre,Descripcion,Ubicacion,
                 FrecuenciaHoras,FrecuenciaKm,FrecuenciaMantenimiento,
                 FechaAlta,UltimaLectura,Activo,
-                HorasActuales,HorasUltimoMantenimiento,FechaUltimoMantenimiento
+                HorasActuales,HorasUltimoMantenimiento,FechaUltimoMantenimiento,
+                COALESCE(UltimaSolicitudLectura,'')
                 FROM Equipos";
             using var r = cmd.ExecuteReader();
             while (r.Read())
@@ -315,7 +318,8 @@ namespace AppMantenimiento
                     Activo = r.IsDBNull(9) ? 1 : r.GetInt32(9),
                     HorasActuales = r.IsDBNull(10) ? 0 : r.GetInt32(10),
                     HorasUltimoMantenimiento = r.IsDBNull(11) ? 0 : r.GetInt32(11),
-                    FechaUltimoMantenimiento = r.IsDBNull(12) ? "" : r.GetString(12)
+                    FechaUltimoMantenimiento = r.IsDBNull(12) ? "" : r.GetString(12),
+                    UltimaSolicitudLectura = r.IsDBNull(13) ? "" : r.GetString(13)
                 });
             return lista;
         }
@@ -355,6 +359,17 @@ namespace AppMantenimiento
             var cmd = con.CreateCommand();
             cmd.CommandText = "UPDATE Equipos SET UltimaLectura=@f WHERE Id=@id";
             cmd.Parameters.AddWithValue("@f", DateTime.Now.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@id", equipoId);
+            cmd.ExecuteNonQuery();
+        }
+        public static void ActualizarUltimaSolicitudLectura(int equipoId, string fecha)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+
+            var cmd = con.CreateCommand();
+            cmd.CommandText = "UPDATE Equipos SET UltimaSolicitudLectura=@f WHERE Id=@id";
+            cmd.Parameters.AddWithValue("@f", fecha);
             cmd.Parameters.AddWithValue("@id", equipoId);
             cmd.ExecuteNonQuery();
         }

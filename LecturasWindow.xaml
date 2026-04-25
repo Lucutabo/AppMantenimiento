@@ -124,13 +124,15 @@
                 <!-- Fila 1: Equipo + Valor + Coste + Proveedor + Botón -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="90"/>
-                        <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="160"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="95"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="105"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="85"/>
                         <ColumnDefinition Width="8"/>
@@ -161,7 +163,12 @@
                         <TextBox x:Name="TxtProveedor" Style="{StaticResource InputStyle}"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="8" VerticalAlignment="Bottom">
+                    <StackPanel Grid.Column="8">
+                        <TextBlock Text="FECHA" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="TxtFecha" Style="{StaticResource InputStyle}" ToolTip="Formato: dd/MM/yyyy"/>
+                    </StackPanel>
+                  
+                    <StackPanel Grid.Column="10" VerticalAlignment="Bottom">
                         <Button x:Name="BtnLimpiar" Content="🧹 Limpiar"
                         Style="{StaticResource BtnBase}"
                         Background="#78909C"
@@ -170,7 +177,7 @@
                         Click="BtnLimpiar_Click"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="10" VerticalAlignment="Bottom">
+                    <StackPanel Grid.Column="12" VerticalAlignment="Bottom">
                         <Button x:Name="BtnBorrar" Content="🗑 Borrar"
                         Style="{StaticResource BtnBase}"
                         Background="#C62828"
@@ -179,14 +186,14 @@
                         Click="BtnBorrar_Click"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="12" VerticalAlignment="Bottom">
+                    <StackPanel Grid.Column="14" VerticalAlignment="Bottom">
                         <Button x:Name="BtnRegistrar" Content="✔ Registrar"
                         Style="{StaticResource BtnBase}"
                         Background="#2E7D32"
                         Padding="12,0"
                         MinWidth="140"
                         Height="34"
-                        Click="BtnRegistrar_Click"/>    
+                        Click="BtnRegistrar_Click"/>
                     </StackPanel>
                 </Grid>
 

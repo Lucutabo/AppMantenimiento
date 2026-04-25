@@ -23,6 +23,7 @@ namespace AppMantenimiento
             PanelReset.Visibility = Visibility.Collapsed;
             LblValor.Text = "VALOR (h / km)";
             LblDescripcion.Text = "DESCRIPCIÓN (opcional)";
+            TxtFecha.Text = DateTime.Now.ToString("dd/MM/yyyy");
             ActualizarEstadoFormulario();
 
             CargarEquipos();
@@ -204,6 +205,10 @@ namespace AppMantenimiento
             TxtCoste.Text = lectura.Coste != 0
                 ? lectura.Coste.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
                 : "0";
+            if (DateTime.TryParse(lectura.Fecha, out var fechaRegistro))
+                TxtFecha.Text = fechaRegistro.ToString("dd/MM/yyyy");
+            else
+                TxtFecha.Text = DateTime.Now.ToString("dd/MM/yyyy");
         }
         private void GridLecturas_Sorting(object sender, DataGridSortingEventArgs e)
         {
@@ -290,6 +295,26 @@ namespace AppMantenimiento
                     System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out coste);
             }
+            if (!DateTime.TryParseExact(TxtFecha.Text.Trim(),
+                    "dd/MM/yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None,
+                    out var fechaBase))
+            {
+                MessageBox.Show("La fecha debe tener formato dd/MM/yyyy.", "Aviso",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            TimeSpan horaOriginal = DateTime.Now.TimeOfDay;
+
+            if (_lecturaSeleccionada != null &&
+                DateTime.TryParse(_lecturaSeleccionada.Fecha, out var fechaOriginal))
+            {
+                horaOriginal = fechaOriginal.TimeOfDay;
+            }
+
+            string fechaCompleta = fechaBase.Date.Add(horaOriginal).ToString("yyyy-MM-dd HH:mm");
 
             var lectura = new Lectura
             {
@@ -301,7 +326,7 @@ namespace AppMantenimiento
                 Descripcion = TxtDescripcion.Text.Trim(),
                 Operario = _lecturaSeleccionada?.Operario ?? "Supervisor",
                 Proveedor = TxtProveedor.Text.Trim(),
-                Fecha = _lecturaSeleccionada?.Fecha ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                Fecha = fechaCompleta,
                 Coste = coste
             };
 
