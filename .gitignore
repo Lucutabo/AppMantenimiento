@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build folders
+bin/
+obj/
+
+# Logs
+*.log
+
+# Database local
+*.db-shm
+*.db-wal
+
+# OS files
+Thumbs.db
+.DS_Store
