@@ -233,28 +233,53 @@
                         <TextBlock x:Name="TxtSeleccionado" Text="Selecciona un equipo de la tabla"
                                    FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"
                                    Margin="0,0,16,0"/>
-                        <Button Style="{StaticResource BtnAccion}"
-                                Content="⬇️ Dar de baja" Margin="0,0,8,0"
-                                Click="BtnDarDeBaja_Click">
-                            <Button.Background>
-                                <SolidColorBrush Color="#D97706"/>
+
+                            <Button x:Name="BtnIniciarMantenimiento"
+                Style="{StaticResource BtnAccion}"
+                Content="🟠 Iniciar mantenimiento"
+                Margin="0,0,8,0"
+                Click="BtnIniciarMantenimiento_Click">
+                                <Button.Background>
+                                    <SolidColorBrush Color="#F59E0B"/>
+                                </Button.Background>
+                            </Button>
+
+                            <Button x:Name="BtnReanudarAvisos"
+                Style="{StaticResource BtnAccion}"
+                Content="🔔 Reanudar avisos"
+                Margin="0,0,8,0"
+                Click="BtnReanudarAvisos_Click">
+                                <Button.Background>
+                                    <SolidColorBrush Color="#2563EB"/>
+                                </Button.Background>
+                            </Button>
+
+                            <Button Style="{StaticResource BtnAccion}"
+                Content="⬇️ Dar de baja"
+                Margin="0,0,8,0"
+                Click="BtnDarDeBaja_Click">
+                                <Button.Background>
+                                    <SolidColorBrush Color="#D97706"/>
+                                </Button.Background>
+                            </Button>
+
+                            <Button Style="{StaticResource BtnAccion}"
+                Content="🔺 Reactivar"
+                Margin="0,0,8,0"
+                Click="BtnReactivar_Click">
+                                <Button.Background>
+                                    <SolidColorBrush Color="#059669"/>
+                                </Button.Background>
+                            </Button>
+
+                            <Button Style="{StaticResource BtnAccion}"
+                Content="🗑 Eliminar definitivo"
+                Click="BtnEliminar_Click">
+                                <Button.Background>
+                                <SolidColorBrush Color="#DC2626"/>  
                             </Button.Background>
                         </Button>
-                        <Button Style="{StaticResource BtnAccion}"
-                                Content="🔺 Reactivar" Margin="0,0,8,0"
-                                Click="BtnReactivar_Click">
-                            <Button.Background>
-                                <SolidColorBrush Color="#059669"/>
-                            </Button.Background>
-                        </Button>
-                        <Button Style="{StaticResource BtnAccion}"
-                                Content="🗑 Eliminar definitivo"
-                                Click="BtnEliminar_Click">
-                            <Button.Background>
-                                <SolidColorBrush Color="#DC2626"/>
-                            </Button.Background>
-                        </Button>
-                    </StackPanel>
+                     </StackPanel>
                 </Border>
             </Grid>
         </Border>

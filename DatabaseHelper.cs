@@ -26,6 +26,10 @@ namespace AppMantenimiento
         public int HorasUltimoMantenimiento { get; set; }
         public string FechaUltimoMantenimiento { get; set; }
         public string UltimaSolicitudLectura { get; set; }
+        public string UltimoAvisoMantenimiento { get; set; }
+        public string EstadoUltimoAvisoMantenimiento { get; set; }
+        public int MantenimientoEnCurso { get; set; }
+        public string FechaInicioMantenimientoCurso { get; set; }
 
         public static string RutaDb => RutaDb;
 
@@ -196,6 +200,10 @@ namespace AppMantenimiento
             Migrar(con, "ALTER TABLE Equipos ADD COLUMN HorasActuales INTEGER DEFAULT 0");
             Migrar(con, "ALTER TABLE Equipos ADD COLUMN HorasUltimoMantenimiento INTEGER DEFAULT 0");
             Migrar(con, "ALTER TABLE Equipos ADD COLUMN FechaUltimoMantenimiento TEXT");
+            Migrar(con, "ALTER TABLE Equipos ADD COLUMN UltimoAvisoMantenimiento TEXT");
+            Migrar(con, "ALTER TABLE Equipos ADD COLUMN EstadoUltimoAvisoMantenimiento TEXT");
+            Migrar(con, "ALTER TABLE Equipos ADD COLUMN MantenimientoEnCurso INTEGER DEFAULT 0");
+            Migrar(con, "ALTER TABLE Equipos ADD COLUMN FechaInicioMantenimientoCurso TEXT");
             Migrar(con, "ALTER TABLE Equipos ADD COLUMN FrecuenciaHoras INTEGER DEFAULT 0");
             Migrar(con, "ALTER TABLE Equipos ADD COLUMN FrecuenciaKm INTEGER DEFAULT 0");
             Migrar(con, "ALTER TABLE Lecturas ADD COLUMN HorasActuales INTEGER DEFAULT 0");
@@ -297,11 +305,15 @@ namespace AppMantenimiento
             con.Open();
             var cmd = con.CreateCommand();
             cmd.CommandText = @"SELECT Id,Nombre,Descripcion,Ubicacion,
-                FrecuenciaHoras,FrecuenciaKm,FrecuenciaMantenimiento,
-                FechaAlta,UltimaLectura,Activo,
-                HorasActuales,HorasUltimoMantenimiento,FechaUltimoMantenimiento,
-                COALESCE(UltimaSolicitudLectura,'')
-                FROM Equipos";
+                             FrecuenciaHoras,FrecuenciaKm,FrecuenciaMantenimiento,
+                             FechaAlta,UltimaLectura,Activo,
+                             HorasActuales,HorasUltimoMantenimiento,FechaUltimoMantenimiento,
+                             COALESCE(UltimaSolicitudLectura,''),
+                             COALESCE(UltimoAvisoMantenimiento,''),
+                             COALESCE(EstadoUltimoAvisoMantenimiento,''),
+                             COALESCE(MantenimientoEnCurso,0),
+                             COALESCE(FechaInicioMantenimientoCurso,'')
+                             FROM Equipos";
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 lista.Add(new Equipo
@@ -319,7 +331,11 @@ namespace AppMantenimiento
                     HorasActuales = r.IsDBNull(10) ? 0 : r.GetInt32(10),
                     HorasUltimoMantenimiento = r.IsDBNull(11) ? 0 : r.GetInt32(11),
                     FechaUltimoMantenimiento = r.IsDBNull(12) ? "" : r.GetString(12),
-                    UltimaSolicitudLectura = r.IsDBNull(13) ? "" : r.GetString(13)
+                    UltimaSolicitudLectura = r.IsDBNull(13) ? "" : r.GetString(13),
+                    UltimoAvisoMantenimiento = r.IsDBNull(14) ? "" : r.GetString(14),
+                    EstadoUltimoAvisoMantenimiento = r.IsDBNull(15) ? "" : r.GetString(15),
+                    MantenimientoEnCurso = r.IsDBNull(16) ? 0 : r.GetInt32(16),
+                    FechaInicioMantenimientoCurso = r.IsDBNull(17) ? "" : r.GetString(17)
                 });
             return lista;
         }
@@ -373,7 +389,49 @@ namespace AppMantenimiento
             cmd.Parameters.AddWithValue("@id", equipoId);
             cmd.ExecuteNonQuery();
         }
+        public static void ActualizarUltimoAvisoMantenimiento(int equipoId, string fecha, string estado)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+            var cmd = con.CreateCommand();
+            cmd.CommandText = @"UPDATE Equipos
+                        SET UltimoAvisoMantenimiento = @f,
+                            EstadoUltimoAvisoMantenimiento = @e
+                        WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@f", fecha ?? "");
+            cmd.Parameters.AddWithValue("@e", estado ?? "");
+            cmd.Parameters.AddWithValue("@id", equipoId);
+            cmd.ExecuteNonQuery();
+        }
 
+        public static void ActivarMantenimientoEnCurso(int equipoId)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+            var cmd = con.CreateCommand();
+            cmd.CommandText = @"UPDATE Equipos
+                        SET MantenimientoEnCurso = 1,
+                            FechaInicioMantenimientoCurso = @f
+                        WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@f", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+            cmd.Parameters.AddWithValue("@id", equipoId);
+            cmd.ExecuteNonQuery();
+        }
+
+        public static void DesactivarMantenimientoEnCurso(int equipoId)
+        {
+            using var con = new SqliteConnection($"Data Source={rutaDb}");
+            con.Open();
+            var cmd = con.CreateCommand();
+            cmd.CommandText = @"UPDATE Equipos
+                        SET MantenimientoEnCurso = 0,
+                            FechaInicioMantenimientoCurso = '',
+                            UltimoAvisoMantenimiento = '',
+                            EstadoUltimoAvisoMantenimiento = ''
+                        WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", equipoId);
+            cmd.ExecuteNonQuery();
+        }
 
 
         // ── OPERARIOS ────────────────────────────────────────
@@ -701,7 +759,11 @@ namespace AppMantenimiento
             cmd.CommandText = @"UPDATE Equipos
                 SET HorasUltimoMantenimiento=@h,
                     FechaUltimoMantenimiento=@f,
-                    UltimaLectura=@f
+                    UltimaLectura=@f,
+                    MantenimientoEnCurso = 0,
+                    FechaInicioMantenimientoCurso = '',
+                    UltimoAvisoMantenimiento = '',
+                    EstadoUltimoAvisoMantenimiento = ''
                 WHERE Id=@id";
             cmd.Parameters.AddWithValue("@h", horasActuales);
             cmd.Parameters.AddWithValue("@f", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));

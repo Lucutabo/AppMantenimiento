@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Timers;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AppMantenimiento
 {
@@ -64,73 +66,87 @@ namespace AppMantenimiento
             foreach (var equipo in equipos)
             {
                 if (equipo.Activo != 1) continue;
+                if (equipo.MantenimientoEnCurso == 1) continue;
 
-                int limite = equipo.FrecuenciaHoras > 0
-                    ? equipo.FrecuenciaHoras
-                    : equipo.FrecuenciaMantenimiento;
-
+                int limite = equipo.FrecuenciaHoras > 0 ? equipo.FrecuenciaHoras : equipo.FrecuenciaMantenimiento;
                 if (limite <= 0) continue;
 
                 double valorActual = equipo.HorasActuales;
                 double baseReset = DatabaseHelper.GetValorEnUltimoReset(equipo.Id);
                 double delta = valorActual - baseReset;
-
-                if (delta < 0)
-                    delta = valorActual;
+                if (delta < 0) delta = valorActual;
 
                 int restante = limite - (int)delta;
 
                 string estado;
-                if (restante <= 0)
-                    estado = "VENCIDO";
-                else if (restante <= 50)
-                    estado = "CRITICO";
-                else if (restante <= 100)
-                    estado = "PROXIMO";
-                else
-                    estado = "OK";
+                if (restante <= 0) estado = "VENCIDO";
+                else if (restante <= 50) estado = "CRITICO";
+                else if (restante <= 100) estado = "PROXIMO";
+                else estado = "OK";
 
                 if (estado == "OK") continue;
 
-                var asigs = asignaciones.FindAll(a => a.EquipoId == equipo.Id);
+                bool avisar = false;
 
-                foreach (var asig in asigs)
+                if (string.IsNullOrWhiteSpace(equipo.UltimoAvisoMantenimiento) ||
+                    string.IsNullOrWhiteSpace(equipo.EstadoUltimoAvisoMantenimiento))
+                {
+                    avisar = true;
+                }
+                else if (!string.Equals(equipo.EstadoUltimoAvisoMantenimiento, estado, StringComparison.OrdinalIgnoreCase))
+                {
+                    avisar = true;
+                }
+                else if (DateTime.TryParse(equipo.UltimoAvisoMantenimiento, out var ultimoAviso))
+                {
+                    if (ultimoAviso.Date < DateTime.Now.Date)
+                        avisar = true;
+                }
+                else
+                {
+                    avisar = true;
+                }
+
+                if (!avisar) continue;
+
+                string icono = estado == "VENCIDO" ? "🔴" : estado == "CRITICO" ? "🟠" : "🟡";
+                string detalle = equipo.FrecuenciaHoras > 0
+                    ? $"Horas restantes: {restante}h"
+                    : $"Días restantes: {restante}";
+
+                var asigsEquipo = asignaciones.FindAll(a => a.EquipoId == equipo.Id);
+
+                var chatsEnviados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var asig in asigsEquipo)
                 {
                     var op = operarios.Find(o => o.Id == asig.OperarioId && o.Activo == 1);
                     if (op == null) continue;
+                    if (string.IsNullOrWhiteSpace(op.TelegramChatId)) continue;
 
-                    string icono = estado == "VENCIDO" ? "🔴" :
-                                   estado == "CRITICO" ? "🟠" : "🟡";
+                    if (chatsEnviados.Contains(op.TelegramChatId)) continue;
+                    chatsEnviados.Add(op.TelegramChatId);
 
-                    string detalle = equipo.FrecuenciaHoras > 0
-                        ? $"Horas restantes: {restante}h"
-                        : $"Días restantes: {restante}";
-
-                    if (!string.IsNullOrWhiteSpace(op.TelegramChatId))
-                    {
-                        telegramSvc.EnviarMensaje(op.TelegramChatId,
-                            $"{icono} <b>Aviso de mantenimiento: {estado}</b>\n\n" +
-                            $"Equipo: <b>{equipo.Nombre}</b>\n" +
-                            $"{detalle}\n\n" +
-                            $"Usa <code>/completado {equipo.Id} descripción</code> cuando lo realices.");
-                    }
+                    telegramSvc.EnviarMensaje(op.TelegramChatId,
+                        $"{icono} **Aviso de mantenimiento: {estado}**\n\n" +
+                        $"Equipo: **{equipo.Nombre}**\n" +
+                        $"{detalle}\n\n" +
+                        $"Usa `/completado {equipo.Id} descripción` cuando lo realices.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(chatSupervisor))
                 {
-                    string icono = estado == "VENCIDO" ? "🔴" :
-                                   estado == "CRITICO" ? "🟠" : "🟡";
+                    string nombreOp = "Sin asignar";
 
-                    string detalle = equipo.FrecuenciaHoras > 0
-                        ? $"Horas restantes: {restante}h"
-                        : $"Días restantes: {restante}";
+                    var primeraAsignacionValida = asigsEquipo
+                        .Select(a => operarios.Find(o => o.Id == a.OperarioId && o.Activo == 1))
+                        .FirstOrDefault(o => o != null);
 
-                    string nombreOp = asigs.Count > 0
-                        ? operarios.Find(o => o.Id == asigs[0].OperarioId)?.Nombre ?? "Sin asignar"
-                        : "Sin asignar";
+                    if (primeraAsignacionValida != null)
+                        nombreOp = primeraAsignacionValida.Nombre;
 
                     telegramSvc.EnviarMensaje(chatSupervisor,
-                        $"{icono} <b>{estado}: {equipo.Nombre}</b>\n" +
+                        $"{icono} **{estado}: {equipo.Nombre}**\n" +
                         $"Operario: {nombreOp}\n{detalle}");
                 }
 
@@ -144,6 +160,11 @@ namespace AppMantenimiento
                         equipo.FrecuenciaHoras > 0 ? "horas" : "días",
                         estado);
                 }
+
+                DatabaseHelper.ActualizarUltimoAvisoMantenimiento(
+                    equipo.Id,
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                    estado);
             }
         }
 

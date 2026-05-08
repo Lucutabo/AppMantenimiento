@@ -189,5 +189,60 @@ namespace AppMantenimiento
                 CargarEquipos();
             }
         }
+        private void BtnIniciarMantenimiento_Click(object sender, RoutedEventArgs e)
+        {
+            var eq = EquipoSeleccionado();
+            if (eq == null) return;
+
+            if (eq.Activo == 0)
+            {
+                MessageBox.Show("El equipo está dado de baja.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (eq.MantenimientoEnCurso == 1)
+            {
+                MessageBox.Show("Ese equipo ya está marcado como mantenimiento en curso.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var r = MessageBox.Show(
+                $"¿Marcar '{eq.Nombre}' como mantenimiento en curso?\n\n" +
+                "Mientras esté en este estado no se enviarán recordatorios de mantenimiento.",
+                "Confirmar",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (r != MessageBoxResult.Yes) return;
+
+            DatabaseHelper.ActivarMantenimientoEnCurso(eq.Id);
+            MessageBox.Show("Equipo marcado como mantenimiento en curso.", "OK", MessageBoxButton.OK, MessageBoxImage.Information);
+            CargarEquipos();
+        }
+
+        private void BtnReanudarAvisos_Click(object sender, RoutedEventArgs e)
+        {
+            var eq = EquipoSeleccionado();
+            if (eq == null) return;
+
+            if (eq.MantenimientoEnCurso == 0)
+            {
+                MessageBox.Show("Ese equipo no está en mantenimiento en curso.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var r = MessageBox.Show(
+                $"¿Reanudar los avisos de mantenimiento para '{eq.Nombre}'?\n\n" +
+                "El equipo dejará de estar silenciado.",
+                "Confirmar",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (r != MessageBoxResult.Yes) return;
+
+            DatabaseHelper.DesactivarMantenimientoEnCurso(eq.Id);
+            MessageBox.Show("Avisos de mantenimiento reanudados.", "OK", MessageBoxButton.OK, MessageBoxImage.Information);
+            CargarEquipos();
+        }
     }
 }
